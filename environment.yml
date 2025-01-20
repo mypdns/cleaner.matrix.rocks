@@ -1,0 +1,8 @@
+name: cleaner.matrix,rocks  # Replace with your desired environment name
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - black>=24.10.0

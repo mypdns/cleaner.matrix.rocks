@@ -1,0 +1,6 @@
+[tool.black]
+line-length = 80  # You can customize this setting as needed
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
