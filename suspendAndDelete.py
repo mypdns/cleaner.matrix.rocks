@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b34"  # Bumped version
+VERSION = "0.1.0b35"  # Bumped version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,8 +17,8 @@ if not os.path.exists(log_folder):
     os.mkdir(log_folder)
 
 
-def configure_logging(user_id, log_level):
-    log_path = os.path.join(log_folder, f"{user_id}.log")
+def configure_logging(userId, log_level):
+    log_path = os.path.join(log_folder, f"{userId}.log")
     logging.basicConfig(
         filename=log_path,
         level=log_level,
@@ -49,16 +49,14 @@ def get_api_token():
     return config.get("API", "MATRIX_ROCKS_API_TOKEN", fallback="")
 
 
-def perform_request(
-    endpoint, api_token, user_id, request_type="GET", data=None
-):
+def perform_request(endpoint, api_token, userId, request_type="GET", data=None):
     headers = {"Authorization": f"Bearer {api_token}"}
     if request_type == "GET":
         logging.debug(
-            f'GET request to {endpoint} with params {{"user_id": {user_id}}}'
+            f'GET request to {endpoint} with params {{"userId": {userId}}}'
         )
         response = requests.get(
-            endpoint, params={"user_id": user_id}, headers=headers
+            endpoint, params={"userId": userId}, headers=headers
         )
     else:
         logging.debug(f"POST request to {endpoint} with data {data}")
@@ -71,62 +69,62 @@ def perform_request(
     return response
 
 
-def check_user_suspended(api_url, api_token, user_id):
-    logging.debug(f"Checking if user {user_id} is suspended")
+def check_user_suspended(api_url, api_token, userId):
+    logging.debug(f"Checking if user {userId} is suspended")
     endpoint = f"{api_url}/admin/check-suspended"
-    response = perform_request(endpoint, api_token, user_id)
+    response = perform_request(endpoint, api_token, userId)
     if not response:
         return False
     return response.json().get("isSuspended", False)
 
 
-def suspend_user(api_url, api_token, user_id, reason=None):
-    logging.debug(f"Suspending user {user_id}")
+def suspend_user(api_url, api_token, userId, reason=None):
+    logging.debug(f"Suspending user {userId}")
     endpoint = f"{api_url}/admin/suspend-user"
-    data = {"user_id": user_id}
+    data = {"userId": userId}
     if reason:
         data["reason"] = reason
     response = perform_request(
-        endpoint, api_token, user_id, request_type="POST", data=data
+        endpoint, api_token, userId, request_type="POST", data=data
     )
     return response
 
 
-def delete_user_posts(api_url, api_token, user_id):
-    logging.debug(f"Deleting posts for user {user_id}")
+def delete_user_posts(api_url, api_token, userId):
+    logging.debug(f"Deleting posts for user {userId}")
     endpoint = f"{api_url}/admin/delete-all-posts-of-a-user"
     response = perform_request(
         endpoint,
         api_token,
-        user_id,
+        userId,
         request_type="POST",
-        data={"user_id": user_id},
+        data={"userId": userId},
     )
     return response
 
 
-def delete_user_files(api_url, api_token, user_id):
-    logging.debug(f"Deleting files for user {user_id}")
+def delete_user_files(api_url, api_token, userId):
+    logging.debug(f"Deleting files for user {userId}")
     endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
     response = perform_request(
         endpoint,
         api_token,
-        user_id,
+        userId,
         request_type="POST",
-        data={"user_id": user_id},
+        data={"userId": userId},
     )
     return response
 
 
-def delete_user_notes(api_url, api_token, user_id):
-    logging.debug(f"Deleting notes for user {user_id}")
+def delete_user_notes(api_url, api_token, userId):
+    logging.debug(f"Deleting notes for user {userId}")
     get_notes_endpoint = f"{api_url}/users/notes"
     headers = {"Authorization": f"Bearer {api_token}"}
     logging.debug(
-        f'GET request to {get_notes_endpoint} with params {{"user_id": {user_id}}}'
+        f'GET request to {get_notes_endpoint} with params {{"userId": {userId}}}'
     )
     response = requests.get(
-        get_notes_endpoint, params={"user_id": user_id}, headers=headers
+        get_notes_endpoint, params={"userId": userId}, headers=headers
     )
     logging.debug(f"Response: {response.status_code} {response.text}")
     if response.status_code != 200:
@@ -189,36 +187,36 @@ def main():
 
     api_url = args.url
     api_token = args.API_token if args.API_token else get_api_token()
-    user_id = args.user or args.user
+    userId = args.user or args.user
     log_level = getattr(logging, args.log_level.upper(), logging.INFO)
-    configure_logging(user_id, log_level)
+    configure_logging(userId, log_level)
 
     if not api_token:
         logging.error("API token is missing")
         sys.exit(1)
 
-    if not check_user_suspended(api_url, api_token, user_id):
-        if suspend_user(api_url, api_token, user_id, reason=args.reason):
-            logging.info(f"Successfully suspended user {user_id}")
+    if not check_user_suspended(api_url, api_token, userId):
+        if suspend_user(api_url, api_token, userId, reason=args.reason):
+            logging.info(f"Successfully suspended user {userId}")
         else:
-            logging.error(f"Failed to suspend user {user_id}")
+            logging.error(f"Failed to suspend user {userId}")
     else:
-        logging.info(f"User {user_id} is already suspended")
+        logging.info(f"User {userId} is already suspended")
 
-    if delete_user_posts(api_url, api_token, user_id):
-        logging.info(f"Successfully deleted posts for user {user_id}")
+    if delete_user_posts(api_url, api_token, userId):
+        logging.info(f"Successfully deleted posts for user {userId}")
     else:
-        logging.error(f"Failed to delete posts for user {user_id}")
+        logging.error(f"Failed to delete posts for user {userId}")
 
-    if delete_user_files(api_url, api_token, user_id):
-        logging.info(f"Successfully deleted files for user {user_id}")
+    if delete_user_files(api_url, api_token, userId):
+        logging.info(f"Successfully deleted files for user {userId}")
     else:
-        logging.error(f"Failed to delete files for user {user_id}")
+        logging.error(f"Failed to delete files for user {userId}")
 
-    if delete_user_notes(api_url, api_token, user_id):
-        logging.info(f"Successfully deleted notes for user {user_id}")
+    if delete_user_notes(api_url, api_token, userId):
+        logging.info(f"Successfully deleted notes for user {userId}")
     else:
-        logging.error(f"Failed to delete notes for user {user_id}")
+        logging.error(f"Failed to delete notes for user {userId}")
 
 
 if __name__ == "__main__":
