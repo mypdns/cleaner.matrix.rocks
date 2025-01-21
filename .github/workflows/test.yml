@@ -26,3 +26,4 @@ jobs:
       run: |
         user_id=$(echo "$MATRIX_ROCKS_SUSPENDBLE_USERIDS" | head -n 1)
         python suspendAndDelete.py --user $user_id --reason "Testing suspension"
+        python suspendAndDelete.py --API_token $MATRIX_ROCKS_API_TOKEN --url https://matrix.rocks/api $user_id
