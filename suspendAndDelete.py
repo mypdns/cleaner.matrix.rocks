@@ -1,3 +1,8 @@
+# Copyright (C) 2025 My Privacy DNS
+# This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+# You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 import requests
 import argparse
 import sys
@@ -8,16 +13,22 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b19"  # PEP 404 compliant versioning
+VERSION = "0.1.0b12"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
-log_path = os.path.join(script_dir, "suspendAndDelete.log")
-logging.basicConfig(
-    filename=log_path,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)s:%(message)s",
-)
+log_folder = os.path.join(script_dir, "logs")
+if not os.path.exists(log_folder):
+    os.mkdir(log_folder)
+
+
+def configure_logging(user_id, log_level):
+    log_path = os.path.join(log_folder, f"{user_id}.log")
+    logging.basicConfig(
+        filename=log_path,
+        level=log_level,
+        format="%(asctime)s %(levelname)s:%(message)s",
+    )
 
 
 def get_api_token():
@@ -71,15 +82,14 @@ def check_user_suspended(api_url, api_token, user_id):
     return response.json().get("isSuspended", False)
 
 
-def suspend_user(api_url, api_token, user_id):
+def suspend_user(api_url, api_token, user_id, reason=None):
     logging.debug(f"Suspending user {user_id}")
     endpoint = f"{api_url}/admin/suspend-user"
+    data = {"userId": user_id}
+    if reason:
+        data["reason"] = reason
     response = perform_request(
-        endpoint,
-        api_token,
-        user_id,
-        request_type="POST",
-        data={"userId": user_id},
+        endpoint, api_token, user_id, request_type="POST", data=data
     )
     return response
 
@@ -157,49 +167,33 @@ def main():
     )
     parser.add_argument("--version", action="version", version=VERSION)
     parser.add_argument(
-        "-h", "--help", action="help", help="Show this help message and exit"
-    )
-    parser.add_argument(
-        "-v",
-        "--version",
-        action="version",
-        version=VERSION,
-        help="Show program's version number and exit",
-    )
-    parser.add_argument(
-        "-d", "--donate", action="store_true", help="Open donation URL"
-    )
-    parser.add_argument(
         "--API_token", help="Provide a different API token", type=str
-    )
-    parser.add_argument(
-        "-u", "--url", help="Provide a different API URL", type=str
     )
     parser.add_argument(
         "--fr", help="Suspend a remote system account", type=str
     )
     parser.add_argument(
-        "-r", "--reason", help="Provide a reason for suspension", type=str
+        "--reason", help="Provide a reason for suspension", type=str
+    )
+    parser.add_argument(
+        "--log_level",
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
     args = parser.parse_args()
 
     api_url = args.url
     api_token = args.API_token if args.API_token else get_api_token()
     user_id = args.user
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    configure_logging(user_id, log_level)
 
     if not api_token:
         logging.error("API token is missing")
         sys.exit(1)
 
-    if args.donate:
-        print("Opening donation URL...")
-        import webbrowser
-
-        webbrowser.open("https://www.mypdns.org/donate")
-        sys.exit(0)
-
     if not check_user_suspended(api_url, api_token, user_id):
-        if suspend_user(api_url, api_token, user_id):
+        if suspend_user(api_url, api_token, user_id, reason=args.reason):
             logging.info(f"Successfully suspended user {user_id}")
         else:
             logging.error(f"Failed to suspend user {user_id}")
