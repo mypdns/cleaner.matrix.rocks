@@ -3,7 +3,7 @@ name: Test and Release suspendAndDelete script
 on: [push, pull_request]
 
 jobs:
-  test:
+  test-python:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -35,8 +35,30 @@ jobs:
           exit 1
         fi
 
+  test-bash:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Run suspend.sh script
+      env:
+        MATRIX_ROCKS_API_TOKEN: ${{ secrets.MATRIX_ROCKS_API_TOKEN }}
+        MATRIX_ROCKS_SUSPENDBLE_USERIDS: ${{ vars.MATRIX_ROCKS_SUSPENDBLE_USERIDS }}
+      run: |
+        user_id=$(echo "$MATRIX_ROCKS_SUSPENDBLE_USERIDS" | head -n 1)
+        ./suspend.sh --user $user_id --reason "Testing suspension" 2>&1 | tee suspend_output.log
+      continue-on-error: true
+
+    - name: Check for errors in suspend.sh log
+      run: |
+        if grep -i "error" suspend_output.log; then
+          echo "Errors found in script output"
+          exit 1
+        fi
+
   release:
-    needs: [test]
+    needs: [test-python, test-bash]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
