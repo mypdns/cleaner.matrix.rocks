@@ -4,10 +4,11 @@ import sys
 import os
 import configparser
 import logging
+import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b6"  # PEP 404 compliant versioning
+VERSION = "0.1.0b11"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,22 +27,22 @@ def get_api_token():
         logging.debug("Running in GitHub Actions")
         return os.environ.get("MATRIX_ROCKS_API_TOKEN", "")
 
-    # Read API token from the configuration file
-    home_dir = os.environ.get("HOME")
-    config_path = os.path.join(
-        home_dir, ".config", "myPrivacyDNS", "config.user.ini"
-    )
+    # Read API token from the local configuration file within the repo path
+    config_path = os.path.join(script_dir, "config.user.ini")
     config = configparser.ConfigParser()
     config.read(config_path)
 
-    if (
-        not config.has_section("DEFAULT")
-        or "MATRIX_ROCKS_API_TOKEN" not in config["DEFAULT"]
-    ):
-        logging.error(f"Missing MATRIX_ROCKS_API_TOKEN in {config_path}")
-        return ""
+    if not config.has_section("API"):
+        config.add_section("API")
 
-    return config.get("DEFAULT", "MATRIX_ROCKS_API_TOKEN", fallback="")
+    if "MATRIX_ROCKS_API_TOKEN" not in config["API"]:
+        logging.error(f"Missing MATRIX_ROCKS_API_TOKEN in {config_path}")
+        api_token = getpass.getpass("Enter your MATRIX_ROCKS_API_TOKEN: ")
+        config["API"]["MATRIX_ROCKS_API_TOKEN"] = api_token
+        with open(config_path, "w") as config_file:
+            config.write(config_file)
+
+    return config.get("API", "MATRIX_ROCKS_API_TOKEN", fallback="")
 
 
 def check_user_suspended(api_url, api_token, user_id):
