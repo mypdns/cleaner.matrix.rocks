@@ -6,3 +6,5 @@ dependencies:
   - pip
   - pip:
       - black>=24.10.0
+      - mypdns>=1.0.5
+      - requests>=2.26.0

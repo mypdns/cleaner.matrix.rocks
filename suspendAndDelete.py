@@ -13,7 +13,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b12"  # PEP 404 compliant versioning
+VERSION = "0.1.0b21"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
