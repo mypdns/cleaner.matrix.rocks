@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b26"  # Updated version
+VERSION = "0.1.0b28"  # Updated version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,7 +89,7 @@ def suspend_user(api_url, api_token, user_id, reason=None):
 
 def delete_user_posts(api_url, api_token, user_id):
     logging.debug(f"Deleting posts for user {user_id}")
-    endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
+    endpoint = f"{api_url}/admin/delete-all-posts-of-a-user"
     response = perform_request(
         endpoint,
         api_token,
