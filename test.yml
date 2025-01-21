@@ -1,0 +1,28 @@
+name: Test suspendAndDelete script
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run suspendAndDelete script
+      env:
+        MATRIX_ROCKS_API_TOKEN: ${{ secrets.MATRIX_ROCKS_API_TOKEN }}
+        MATRIX_ROCKS_SUSPENDBLE_USERIDS: ${{ vars.MATRIX_ROCKS_SUSPENDBLE_USERIDS }}
+      run: |
+        user_id=$(echo "$MATRIX_ROCKS_SUSPENDBLE_USERIDS" | head -n 1)
+        python suspendAndDelete.py --user $user_id --reason "Testing suspension"

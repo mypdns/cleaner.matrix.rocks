@@ -1,4 +1,4 @@
-import requests
+import requests  # Ensure this is not removed, as it is used in several functions
 import argparse
 import sys
 import os
@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b11"  # PEP 404 compliant versioning
+VERSION = "0.1.0b12"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -45,61 +45,69 @@ def get_api_token():
     return config.get("API", "MATRIX_ROCKS_API_TOKEN", fallback="")
 
 
+def perform_request(
+    endpoint, api_token, user_id, request_type="GET", data=None
+):
+    headers = {"Authorization": f"Bearer {api_token}"}
+    if request_type == "GET":
+        response = requests.get(
+            endpoint, params={"userId": user_id}, headers=headers
+        )
+    else:
+        response = requests.post(endpoint, json=data, headers=headers)
+
+    if response.status_code != 200:
+        logging.error(f"Error: {response.status_code} {response.text}")
+        return False
+    return response
+
+
 def check_user_suspended(api_url, api_token, user_id):
     logging.debug(f"Checking if user {user_id} is suspended")
-    check_suspended_endpoint = f"{api_url}/admin/check-suspended"
-    headers = {"Authorization": f"Bearer {api_token}"}
-    response = requests.get(
-        check_suspended_endpoint, params={"userId": user_id}, headers=headers
-    )
-    if response.status_code != 200:
-        logging.error(
-            f"Error checking user suspension status: {response.status_code} {response.text}"
-        )
+    endpoint = f"{api_url}/admin/check-suspended"
+    response = perform_request(endpoint, api_token, user_id)
+    if not response:
         return False
     return response.json().get("isSuspended", False)
 
 
 def suspend_user(api_url, api_token, user_id):
     logging.debug(f"Suspending user {user_id}")
-    suspend_endpoint = f"{api_url}/admin/suspend-user"
-    headers = {"Authorization": f"Bearer {api_token}"}
-    response = requests.post(
-        suspend_endpoint, json={"userId": user_id}, headers=headers
+    endpoint = f"{api_url}/admin/suspend-user"
+    response = perform_request(
+        endpoint,
+        api_token,
+        user_id,
+        request_type="POST",
+        data={"userId": user_id},
     )
-    if response.status_code != 200:
-        logging.error(
-            f"Error suspending user: {response.status_code} {response.text}"
-        )
-    return response.status_code == 200
+    return response
 
 
 def delete_user_posts(api_url, api_token, user_id):
     logging.debug(f"Deleting posts for user {user_id}")
-    delete_posts_endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
-    headers = {"Authorization": f"Bearer {api_token}"}
-    response = requests.post(
-        delete_posts_endpoint, json={"userId": user_id}, headers=headers
+    endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
+    response = perform_request(
+        endpoint,
+        api_token,
+        user_id,
+        request_type="POST",
+        data={"userId": user_id},
     )
-    if response.status_code != 200:
-        logging.error(
-            f"Error deleting user posts: {response.status_code} {response.text}"
-        )
-    return response.status_code == 200
+    return response
 
 
 def delete_user_files(api_url, api_token, user_id):
     logging.debug(f"Deleting files for user {user_id}")
-    delete_files_endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
-    headers = {"Authorization": f"Bearer {api_token}"}
-    response = requests.post(
-        delete_files_endpoint, json={"userId": user_id}, headers=headers
+    endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
+    response = perform_request(
+        endpoint,
+        api_token,
+        user_id,
+        request_type="POST",
+        data={"userId": user_id},
     )
-    if response.status_code != 200:
-        logging.error(
-            f"Error deleting user files: {response.status_code} {response.text}"
-        )
-    return response.status_code == 200
+    return response
 
 
 def delete_user_notes(api_url, api_token, user_id):
@@ -121,15 +129,16 @@ def delete_user_notes(api_url, api_token, user_id):
 
     for note in notes:
         delete_note_endpoint = f"{api_url}/notes/delete"
-        response = requests.post(
-            delete_note_endpoint, json={"noteId": note["id"]}, headers=headers
+        response = perform_request(
+            delete_note_endpoint,
+            api_token,
+            note["id"],
+            request_type="POST",
+            data={"noteId": note["id"]},
         )
-        if response.status_code == 200:
+        if response:
             delete_note_success += 1
         else:
-            logging.error(
-                f"Error deleting note {note['id']}: {response.status_code} {response.text}"
-            )
             delete_note_failures += 1
 
     logging.info(
