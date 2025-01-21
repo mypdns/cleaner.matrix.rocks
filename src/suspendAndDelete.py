@@ -7,7 +7,7 @@ import logging
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b5"  # PEP 404 compliant versioning
+VERSION = "0.1.0b6"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
