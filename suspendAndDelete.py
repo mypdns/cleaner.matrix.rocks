@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b29"  # Updated version
+VERSION = "0.1.0b30"  # Bumped version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
