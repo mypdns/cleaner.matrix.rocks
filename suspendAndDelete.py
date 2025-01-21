@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b32"  # Bumped version
+VERSION = "0.1.0b33"  # Bumped version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,12 +54,17 @@ def perform_request(
 ):
     headers = {"Authorization": f"Bearer {api_token}"}
     if request_type == "GET":
+        logging.debug(
+            f'GET request to {endpoint} with params {{"user_id": {user_id}}}'
+        )
         response = requests.get(
             endpoint, params={"user_id": user_id}, headers=headers
         )
     else:
+        logging.debug(f"POST request to {endpoint} with data {data}")
         response = requests.post(endpoint, json=data, headers=headers)
 
+    logging.debug(f"Response: {response.status_code} {response.text}")
     if response.status_code != 200:
         logging.error(f"Error: {response.status_code} {response.text}")
         return False
@@ -117,9 +122,13 @@ def delete_user_notes(api_url, api_token, user_id):
     logging.debug(f"Deleting notes for user {user_id}")
     get_notes_endpoint = f"{api_url}/users/notes"
     headers = {"Authorization": f"Bearer {api_token}"}
+    logging.debug(
+        f'GET request to {get_notes_endpoint} with params {{"user_id": {user_id}}}'
+    )
     response = requests.get(
         get_notes_endpoint, params={"user_id": user_id}, headers=headers
     )
+    logging.debug(f"Response: {response.status_code} {response.text}")
     if response.status_code != 200:
         logging.error(
             f"Error retrieving user notes: {response.status_code} {response.text}"
@@ -152,7 +161,7 @@ def delete_user_notes(api_url, api_token, user_id):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="MK-Cleaner: Suspend user account and delete their posts, files, and notes"
+        description="Suspend and delete: Suspend user account and delete their posts, files, and notes"
     )
     parser.add_argument("user", nargs="?", help="User ID to be suspended")
     parser.add_argument(
