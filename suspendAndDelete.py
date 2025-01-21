@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b31"  # Bumped version
+VERSION = "0.1.0b32"  # Bumped version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -125,7 +125,7 @@ def main():
 
     api_url = args.url
     api_token = args.API_token if args.API_token else get_api_token()
-    user_id = args.user
+    user_id = args.user or args.user
     log_level = getattr(logging, args.log_level.upper(), logging.INFO)
     configure_logging(user_id, log_level)
 
