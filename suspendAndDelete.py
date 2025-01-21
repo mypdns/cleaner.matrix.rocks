@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b25"
+VERSION = "0.1.0b27"  # Updated version
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,7 +55,7 @@ def perform_request(
     headers = {"Authorization": f"Bearer {api_token}"}
     if request_type == "GET":
         response = requests.get(
-            endpoint, params={"userId": user_id}, headers=headers
+            endpoint, params={"user_id": user_id}, headers=headers
         )
     else:
         response = requests.post(endpoint, json=data, headers=headers)
@@ -78,7 +78,7 @@ def check_user_suspended(api_url, api_token, user_id):
 def suspend_user(api_url, api_token, user_id, reason=None):
     logging.debug(f"Suspending user {user_id}")
     endpoint = f"{api_url}/admin/suspend-user"
-    data = {"userId": user_id}
+    data = {"user_id": user_id}
     if reason:
         data["reason"] = reason
     response = perform_request(
@@ -95,7 +95,7 @@ def delete_user_posts(api_url, api_token, user_id):
         api_token,
         user_id,
         request_type="POST",
-        data={"userId": user_id},
+        data={"user_id": user_id},
     )
     return response
 
@@ -108,7 +108,7 @@ def delete_user_files(api_url, api_token, user_id):
         api_token,
         user_id,
         request_type="POST",
-        data={"userId": user_id},
+        data={"user_id": user_id},
     )
     return response
 
@@ -118,7 +118,7 @@ def delete_user_notes(api_url, api_token, user_id):
     get_notes_endpoint = f"{api_url}/users/notes"
     headers = {"Authorization": f"Bearer {api_token}"}
     response = requests.get(
-        get_notes_endpoint, params={"userId": user_id}, headers=headers
+        get_notes_endpoint, params={"user_id": user_id}, headers=headers
     )
     if response.status_code != 200:
         logging.error(
@@ -137,7 +137,7 @@ def delete_user_notes(api_url, api_token, user_id):
             api_token,
             note["id"],
             request_type="POST",
-            data={"noteId": note["id"]},
+            data={"note_id": note["id"]},
         )
         if response:
             delete_note_success += 1
