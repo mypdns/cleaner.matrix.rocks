@@ -1,4 +1,4 @@
-name: Test suspendAndDelete script
+name: Test and Release suspendAndDelete script
 
 on: [push, pull_request]
 
@@ -25,5 +25,49 @@ jobs:
         MATRIX_ROCKS_SUSPENDBLE_USERIDS: ${{ vars.MATRIX_ROCKS_SUSPENDBLE_USERIDS }}
       run: |
         user_id=$(echo "$MATRIX_ROCKS_SUSPENDBLE_USERIDS" | head -n 1)
-        python suspendAndDelete.py --user $user_id --reason "Testing suspension"
-#        python suspendAndDelete.py --API_token $MATRIX_ROCKS_API_TOKEN --url https://matrix.rocks/api $user_id
+        python suspendAndDelete.py --user $user_id --reason "Testing suspension" 2>&1 | tee output.log
+      continue-on-error: true
+
+    - name: Check for errors in log
+      run: |
+        if grep -i "error" output.log; then
+          echo "Errors found in script output"
+          exit 1
+        fi
+
+  release:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Get version from suspendAndDelete.py
+      id: get_version
+      run: |
+        version=$(grep -oP 'VERSION = "\K[0-9\.b]+' suspendAndDelete.py)
+        echo "::set-output name=version::$version"
+
+    - name: Create Release Notes
+      id: create_notes
+      run: |
+        version=${{ steps.get_version.outputs.version }}
+        issue_id=$(echo $version | grep -oP '[0-9]+')
+        release_notes=$(curl -s https://kb.mypdns.org/issue/TBX-$issue_id | grep -oP '<summary>\K[^<]+')
+        echo "::set-output name=release_notes::$release_notes"
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: Release ${{ steps.get_version.outputs.version }}
+        body: ${{ steps.create_notes.outputs.release_notes }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
