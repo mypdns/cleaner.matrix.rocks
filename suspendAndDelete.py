@@ -1,4 +1,4 @@
-import requests  # Ensure this is not removed, as it is used in several functions
+import requests
 import argparse
 import sys
 import os
@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b12"  # PEP 404 compliant versioning
+VERSION = "0.1.0b19"  # PEP 404 compliant versioning
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -156,15 +156,47 @@ def main():
         "--url", default=DEFAULT_URL, help="Base URL for the API"
     )
     parser.add_argument("--version", action="version", version=VERSION)
+    parser.add_argument(
+        "-h", "--help", action="help", help="Show this help message and exit"
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=VERSION,
+        help="Show program's version number and exit",
+    )
+    parser.add_argument(
+        "-d", "--donate", action="store_true", help="Open donation URL"
+    )
+    parser.add_argument(
+        "--API_token", help="Provide a different API token", type=str
+    )
+    parser.add_argument(
+        "-u", "--url", help="Provide a different API URL", type=str
+    )
+    parser.add_argument(
+        "--fr", help="Suspend a remote system account", type=str
+    )
+    parser.add_argument(
+        "-r", "--reason", help="Provide a reason for suspension", type=str
+    )
     args = parser.parse_args()
 
     api_url = args.url
-    api_token = get_api_token()
+    api_token = args.API_token if args.API_token else get_api_token()
     user_id = args.user
 
     if not api_token:
         logging.error("API token is missing")
         sys.exit(1)
+
+    if args.donate:
+        print("Opening donation URL...")
+        import webbrowser
+
+        webbrowser.open("https://www.mypdns.org/donate")
+        sys.exit(0)
 
     if not check_user_suspended(api_url, api_token, user_id):
         if suspend_user(api_url, api_token, user_id):
