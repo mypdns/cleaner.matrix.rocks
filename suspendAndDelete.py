@@ -1,8 +1,3 @@
-# Copyright (C) 2025 My Privacy DNS
-# This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
-# You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 import requests
 import argparse
 import sys
@@ -13,14 +8,13 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b21"  # PEP 404 compliant versioning
+VERSION = "0.1.0b22"
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
 log_folder = os.path.join(script_dir, "logs")
 if not os.path.exists(log_folder):
     os.mkdir(log_folder)
-
 
 def configure_logging(user_id, log_level):
     log_path = os.path.join(log_folder, f"{user_id}.log")
@@ -30,15 +24,12 @@ def configure_logging(user_id, log_level):
         format="%(asctime)s %(levelname)s:%(message)s",
     )
 
-
 def get_api_token():
     logging.debug("Fetching API token")
-    # Check if running in GitHub Actions
     if "GITHUB_ACTIONS" in os.environ:
         logging.debug("Running in GitHub Actions")
         return os.environ.get("MATRIX_ROCKS_API_TOKEN", "")
 
-    # Read API token from the local configuration file within the repo path
     config_path = os.path.join(script_dir, "config.user.ini")
     config = configparser.ConfigParser()
     config.read(config_path)
@@ -55,15 +46,10 @@ def get_api_token():
 
     return config.get("API", "MATRIX_ROCKS_API_TOKEN", fallback="")
 
-
-def perform_request(
-    endpoint, api_token, user_id, request_type="GET", data=None
-):
+def perform_request(endpoint, api_token, user_id, request_type="GET", data=None):
     headers = {"Authorization": f"Bearer {api_token}"}
     if request_type == "GET":
-        response = requests.get(
-            endpoint, params={"userId": user_id}, headers=headers
-        )
+        response = requests.get(endpoint, params={"userId": user_id}, headers=headers)
     else:
         response = requests.post(endpoint, json=data, headers=headers)
 
@@ -71,7 +57,6 @@ def perform_request(
         logging.error(f"Error: {response.status_code} {response.text}")
         return False
     return response
-
 
 def check_user_suspended(api_url, api_token, user_id):
     logging.debug(f"Checking if user {user_id} is suspended")
@@ -81,56 +66,34 @@ def check_user_suspended(api_url, api_token, user_id):
         return False
     return response.json().get("isSuspended", False)
 
-
 def suspend_user(api_url, api_token, user_id, reason=None):
     logging.debug(f"Suspending user {user_id}")
     endpoint = f"{api_url}/admin/suspend-user"
     data = {"userId": user_id}
     if reason:
         data["reason"] = reason
-    response = perform_request(
-        endpoint, api_token, user_id, request_type="POST", data=data
-    )
+    response = perform_request(endpoint, api_token, user_id, request_type="POST", data=data)
     return response
-
 
 def delete_user_posts(api_url, api_token, user_id):
     logging.debug(f"Deleting posts for user {user_id}")
     endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
-    response = perform_request(
-        endpoint,
-        api_token,
-        user_id,
-        request_type="POST",
-        data={"userId": user_id},
-    )
+    response = perform_request(endpoint, api_token, user_id, request_type="POST", data={"userId": user_id})
     return response
-
 
 def delete_user_files(api_url, api_token, user_id):
     logging.debug(f"Deleting files for user {user_id}")
     endpoint = f"{api_url}/admin/delete-all-files-of-a-user"
-    response = perform_request(
-        endpoint,
-        api_token,
-        user_id,
-        request_type="POST",
-        data={"userId": user_id},
-    )
+    response = perform_request(endpoint, api_token, user_id, request_type="POST", data={"userId": user_id})
     return response
-
 
 def delete_user_notes(api_url, api_token, user_id):
     logging.debug(f"Deleting notes for user {user_id}")
     get_notes_endpoint = f"{api_url}/users/notes"
     headers = {"Authorization": f"Bearer {api_token}"}
-    response = requests.get(
-        get_notes_endpoint, params={"userId": user_id}, headers=headers
-    )
+    response = requests.get(get_notes_endpoint, params={"userId": user_id}, headers=headers)
     if response.status_code != 200:
-        logging.error(
-            f"Error retrieving user notes: {response.status_code} {response.text}"
-        )
+        logging.error(f"Error retrieving user notes: {response.status_code} {response.text}")
         return False
 
     notes = response.json()
@@ -139,47 +102,24 @@ def delete_user_notes(api_url, api_token, user_id):
 
     for note in notes:
         delete_note_endpoint = f"{api_url}/notes/delete"
-        response = perform_request(
-            delete_note_endpoint,
-            api_token,
-            note["id"],
-            request_type="POST",
-            data={"noteId": note["id"]},
-        )
+        response = perform_request(delete_note_endpoint, api_token, note["id"], request_type="POST", data={"noteId": note["id"]})
         if response:
             delete_note_success += 1
         else:
             delete_note_failures += 1
 
-    logging.info(
-        f"Notes deleted: {delete_note_success}, not deleted: {delete_note_failures}"
-    )
+    logging.info(f"Notes deleted: {delete_note_success}, not deleted: {delete_note_failures}")
     return delete_note_failures == 0
 
-
 def main():
-    parser = argparse.ArgumentParser(
-        description="MK-Cleaner: Suspend user account and delete their posts, files, and notes"
-    )
+    parser = argparse.ArgumentParser(description="MK-Cleaner: Suspend user account and delete their posts, files, and notes")
     parser.add_argument("user", help="User ID to be suspended")
-    parser.add_argument(
-        "--url", default=DEFAULT_URL, help="Base URL for the API"
-    )
+    parser.add_argument("--url", default=DEFAULT_URL, help="Base URL for the API")
     parser.add_argument("--version", action="version", version=VERSION)
-    parser.add_argument(
-        "--API_token", help="Provide a different API token", type=str
-    )
-    parser.add_argument(
-        "--fr", help="Suspend a remote system account", type=str
-    )
-    parser.add_argument(
-        "--reason", help="Provide a reason for suspension", type=str
-    )
-    parser.add_argument(
-        "--log_level",
-        default="INFO",
-        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
-    )
+    parser.add_argument("--API_token", help="Provide a different API token", type=str)
+    parser.add_argument("--fr", help="Suspend a remote system account", type=str)
+    parser.add_argument("--reason", help="Provide a reason for suspension", type=str)
+    parser.add_argument("--log_level", default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
     args = parser.parse_args()
 
     api_url = args.url
@@ -214,7 +154,6 @@ def main():
         logging.info(f"Successfully deleted notes for user {user_id}")
     else:
         logging.error(f"Failed to delete notes for user {user_id}")
-
 
 if __name__ == "__main__":
     main()
