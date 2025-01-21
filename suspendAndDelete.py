@@ -8,7 +8,7 @@ import getpass
 
 # Default values
 DEFAULT_URL = "https://matrix.rocks/api"
-VERSION = "0.1.0b22"
+VERSION = "0.1.0b23"
 
 # Configure logging
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -154,7 +154,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="MK-Cleaner: Suspend user account and delete their posts, files, and notes"
     )
-    parser.add_argument("user", help="User ID to be suspended")
+    parser.add_argument("--user", required=True, help="User ID to be suspended")
     parser.add_argument(
         "--url", default=DEFAULT_URL, help="Base URL for the API"
     )
